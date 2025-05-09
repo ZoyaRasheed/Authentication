@@ -28,7 +28,7 @@ export default {
             const { error, value } = validateJoiSchema(registerRequestBody, body);
             if (error) return httpError(next, error, req, 422);
     
-            const { name, emailAddress, phoneNumber, password, consent, role, lat, long } = value;
+            const { name, emailAddress, phoneNumber, password, consent, role, lat, long} = value;
     
             const existingUser = await userModel.findOne({ emailAddress }).select('');
             if (existingUser) return httpError(next, new Error(responseMessage.AUTH.ALREADY_EXIST('user', emailAddress)), req, 403);
@@ -66,7 +66,7 @@ export default {
                 return httpError(next, new Error(responseMessage.COMMON.FAILED_TO_SAVE('User')), req, 500);
             }
 
-            const confirmationUrl = `${config.FRONTEND_URL}app/confirmation/${token}/?code=${code}`
+            const confirmationUrl = `${config.client.url}/app/confirmation/${token}/?code=${code}`
             const to = [emailAddress]
             const subject = 'Confirm Your Account'
             const text = `Hey ${emailAddress}, Please confirm your account by clicking on the link below\n\n${confirmationUrl}`
@@ -151,17 +151,17 @@ export default {
                 config.auth.jwtExpiresIn
             )
 
-            user.lastLogin = dayjs().utc().toDate()
+            user.lastLogin = dayjs().utc().toDate() 
             user.isActive = true
             await user.save()
 
-            const DOMAIN = quicker.getDomainFromUrl(config.SERVER_URL)
+            const DOMAIN = quicker.getDomainFromUrl(config.server.url)
 
             res.cookie('accessToken', accessToken, {
                 path: EApplicationEnvironment.DEVELOPMENT ? '/v1' : '/api/v1',
                 domain: DOMAIN,
                 sameSite: 'strict',
-                maxAge: 1000 * config.ACCESS_TOKEN.EXPIRY,
+                maxAge: config.auth.jwtExpiresIn * 1000,
                 httpOnly: true,
                 secure: !(config.env === EApplicationEnvironment.DEVELOPMENT)
             })
@@ -196,14 +196,14 @@ export default {
             user.isActive = false
             await user.save()
 
-            const DOMAIN = quicker.getDomainFromUrl(config.SERVER_URL)
+            const DOMAIN = quicker.getDomainFromUrl(config.server.url)
 
             res.clearCookie('accessToken', {
                 path: EApplicationEnvironment.DEVELOPMENT ? '/v1' : '/api/v1',
                 domain: DOMAIN,
                 sameSite: 'strict',
                 httpOnly: true,
-                secure: config.ENV !== EApplicationEnvironment.DEVELOPMENT
+                secure: config.env !== EApplicationEnvironment.DEVELOPMENT
             })
             
             httpResponse(req, res, 200, responseMessage.SUCCESS)
@@ -214,6 +214,8 @@ export default {
     selfIdentification: async (req, res, next) => {
         try {
             const { authenticatedUser } = req
+            console.log(authenticatedUser);
+            
             httpResponse(req, res, 200, responseMessage.SUCCESS, authenticatedUser)
         } catch (err) {
             httpError(next, err, req, 500)
@@ -245,7 +247,7 @@ export default {
 
             await user.save()
 
-            const resetUrl = `${config.FRONTEND_URL}app/reset-password/${token}`
+            const resetUrl = `${config.client.url}app/reset-password/${token}`
             const to = [emailAddress]
             const subject = 'Account Password Reset Requested'
             const text = `Hey ${user.name}, Please reset your account password by clicking on the link below\n\nLink will expire within 15 Minutes\n\n${resetUrl}`

@@ -14,8 +14,8 @@ const config = {
   auth: {
     jwtSecret: process.env.JWT_SECRET,
     jwtRefreshSecret: process.env.JWT_REFRESH_SECRET,
-    jwtExpiresIn: process.env.JWT_EXPIRES_IN || '1h',
-    jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
+    jwtExpiresIn: parseInt(process.env.JWT_EXPIRES_IN || '3600', 10),
+    jwtRefreshExpiresIn: parseInt(process.env.JWT_REFRESH_EXPIRES_IN || '604800', 10),
   },
   email: {
     service: process.env.EMAIL_SERVICE,

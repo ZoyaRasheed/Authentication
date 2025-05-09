@@ -7,6 +7,8 @@ import quicker from "../util/quicker.js";
 export default async (request, _res, next) => {
     try {
         const req = request
+
+        console.log("Authentication middleware called");
         
         let accessToken;
 
@@ -15,6 +17,8 @@ export default async (request, _res, next) => {
             accessToken = cookies.accessToken
         }
 
+        console.log("Access token from cookies:", accessToken);
+        
         if (!accessToken) {
             const authHeader = req.headers.authorization
             if (authHeader?.startsWith('Bearer ')) {
@@ -26,18 +30,20 @@ export default async (request, _res, next) => {
             return httpError(next, new Error(responseMessage.AUTH.UNAUTHORIZED), req, 401)
         }
         
-
-        const { userId } = quicker.verifyToken(accessToken, config.auth.jwtSecret);
-
-        const user = await userModel.findOne({ _id: userId });
-        
-        
-        if (user) {
+        try {
+            const { userId } = quicker.verifyToken(accessToken, config.auth.jwtSecret);
+            
+            const user = await userModel.findOne({ _id: userId });
+            
+            if (!user) {
+                return httpError(next, new Error(responseMessage.AUTH.UNAUTHORIZED), req, 401)
+            }
+            
             req.authenticatedUser = user
             return next()
+        } catch (tokenError) {
+                return httpError(next, new Error(responseMessage.AUTH.UNAUTHORIZED), req, 401)
         }
-
-        httpError(next, new Error(responseMessage.AUTH.UNAUTHORIZED), req, 401)
     } catch (err) {
         httpError(next, err, request, 500)
     }
